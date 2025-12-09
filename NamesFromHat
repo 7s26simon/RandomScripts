@@ -1,0 +1,318 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <title>RNamesFromHat v1.0</title>
+  <style>
+    body {
+      font-family: system-ui, sans-serif;
+      background: #111827;
+      color: #f9fafb;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 20px;
+    }
+
+    h1 {
+      margin-bottom: 10px;
+    }
+
+    .container {
+      max-width: 800px;
+      width: 100%;
+      display: grid;
+      grid-template-columns: 1.2fr 1.8fr;
+      gap: 20px;
+    }
+
+    textarea {
+      width: 100%;
+      height: 200px;
+      resize: vertical;
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #374151;
+      background: #020617;
+      color: #f9fafb;
+    }
+
+    button {
+      margin-top: 10px;
+      padding: 8px 16px;
+      border-radius: 6px;
+      border: none;
+      cursor: pointer;
+      background: #2563eb;
+      color: white;
+      font-weight: 600;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+
+    .teams {
+      display: flex;
+      gap: 12px;
+    }
+
+    .team {
+      flex: 1;
+      background: #020617;
+      border-radius: 8px;
+      padding: 10px;
+      border: 1px solid #1f2937;
+    }
+
+    .team h2 {
+      margin-top: 0;
+      font-size: 1rem;
+      text-align: center;
+    }
+
+    .team ul {
+      list-style: none;
+      padding-left: 0;
+      margin: 0;
+      min-height: 140px;
+    }
+
+    .team li {
+      padding: 4px 6px;
+      margin-bottom: 2px;
+      background: #111827;
+      border-radius: 4px;
+      font-size: 0.9rem;
+    }
+
+    /* Hat + slip animation */
+    .stage {
+      margin-top: 20px;
+      height: 160px;
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .hat {
+      position: relative;
+      width: 140px;
+      height: 70px;
+    }
+
+    .hat-brim {
+      position: absolute;
+      bottom: 0;
+      left: 50%;
+      width: 180px;
+      height: 20px;
+      transform: translateX(-50%);
+      background: #020617;
+      border-radius: 999px;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.7);
+    }
+
+    .hat-crown {
+      position: absolute;
+      bottom: 10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 120px;
+      height: 60px;
+      background: #020617;
+      border-radius: 12px 12px 4px 4px;
+      border: 2px solid #4b5563;
+      overflow: hidden;
+    }
+
+    .hat-band {
+      position: absolute;
+      bottom: 28px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 110px;
+      height: 10px;
+      background: linear-gradient(90deg, #f97316, #facc15);
+    }
+
+    .slip {
+      position: absolute;
+      left: 50%;
+      bottom: 35px;
+      transform: translateX(-50%);
+      padding: 4px 10px;
+      min-width: 80px;
+      text-align: center;
+      background: #f9fafb;
+      color: #111827;
+      border-radius: 4px;
+      font-weight: 600;
+      opacity: 0;
+      pointer-events: none;
+    }
+
+    .slip.animate {
+      animation: pull-from-hat 1.4s ease-out forwards;
+    }
+
+    @keyframes pull-from-hat {
+      0% {
+        opacity: 0;
+        transform: translate(-50%, 40px) scale(0.3) rotateX(80deg);
+      }
+      35% {
+        opacity: 1;
+        transform: translate(-50%, 0px) scale(1) rotateX(0deg);
+      }
+      70% {
+        transform: translate(-50%, -40px) scale(1.05) rotate(2deg);
+      }
+      100% {
+        transform: translate(-50%, -65px) scale(1) rotate(0deg);
+      }
+    }
+
+    .status {
+      margin-top: 10px;
+      min-height: 22px;
+      font-size: 0.9rem;
+      text-align: center;
+      color: #e5e7eb;
+    }
+  </style>
+</head>
+<body>
+  <h1>Random Team Picker</h1>
+  <div class="container">
+    <div>
+      <p>Enter one name per line:</p>
+      <textarea id="namesInput" placeholder="Alice&#10;Bob&#10;Charlie&#10;Dana"></textarea>
+      <button id="startBtn">Split into Team A and Team B</button>
+    </div>
+    <div>
+      <div class="teams">
+        <div class="team">
+          <h2>Team A</h2>
+          <ul id="teamA"></ul>
+        </div>
+        <div class="team">
+          <h2>Team B</h2>
+          <ul id="teamB"></ul>
+        </div>
+      </div>
+      <div class="stage">
+        <div class="hat">
+          <div class="hat-brim"></div>
+          <div class="hat-crown"></div>
+          <div class="hat-band"></div>
+          <div id="slip" class="slip"></div>
+        </div>
+      </div>
+      <div id="status" class="status"></div>
+    </div>
+  </div>
+
+  <script>
+    const startBtn = document.getElementById("startBtn");
+    const namesInput = document.getElementById("namesInput");
+    const teamAList = document.getElementById("teamA");
+    const teamBList = document.getElementById("teamB");
+    const slip = document.getElementById("slip");
+    const statusText = document.getElementById("status");
+
+    function shuffle(array) {
+      for (let i = array.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    function pickTeams(names) {
+      const shuffled = shuffle([...names]);
+      const half = Math.ceil(shuffled.length / 2);
+      return {
+        teamA: shuffled.slice(0, half),
+        teamB: shuffled.slice(half)
+      };
+    }
+
+    function clearTeams() {
+      teamAList.innerHTML = "";
+      teamBList.innerHTML = "";
+    }
+
+    function addMember(liParent, name) {
+      const li = document.createElement("li");
+      li.textContent = name;
+      liParent.appendChild(li);
+    }
+
+    function animateDrawSequence(names) {
+      clearTeams();
+      statusText.textContent = "Drawing names from the hat...";
+      slip.textContent = "";
+      slip.style.opacity = 0;
+
+      // Randomize order and pre-compute team assignment
+      const shuffled = shuffle([...names]);
+      const assignments = [];
+      const half = Math.ceil(names.length / 2);
+
+      shuffled.forEach((name, index) => {
+        const team = index < half ? "A" : "B";
+        assignments.push({ name, team });
+      });
+
+      let index = 0;
+      startBtn.disabled = true;
+
+      function drawNext() {
+        if (index >= assignments.length) {
+          statusText.textContent = "All names have been assigned!";
+          startBtn.disabled = false;
+          return;
+        }
+
+        const { name, team } = assignments[index];
+
+        // Trigger slip animation with current name
+        slip.classList.remove("animate");
+        void slip.offsetWidth; // force reflow so animation restarts
+        slip.textContent = name;
+        slip.classList.add("animate");
+
+        // After animation, place name into team list
+        setTimeout(() => {
+          if (team === "A") {
+            addMember(teamAList, name);
+          } else {
+            addMember(teamBList, name);
+          }
+          index++;
+          drawNext();
+        }, 1500); // slightly longer than animation duration
+      }
+
+      drawNext();
+    }
+
+    startBtn.addEventListener("click", () => {
+      const raw = namesInput.value
+        .split("\n")
+        .map(s => s.trim())
+        .filter(s => s.length > 0);
+
+      if (raw.length < 2) {
+        alert("Please enter at least 2 names.");
+        return;
+      }
+
+      animateDrawSequence(raw);
+    });
+  </script>
+</body>
+</html>
